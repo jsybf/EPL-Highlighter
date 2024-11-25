@@ -1,5 +1,5 @@
 ## architecture
-![architecture-image](./images/architecute.svg)
+![architecture-image](./images/architecture.svg)
 ## Kafka
 
 ### 구현한 것
