@@ -1,4 +1,4 @@
-import json
+import dataclasses
 import os
 import time
 from datetime import datetime
@@ -6,17 +6,19 @@ from datetime import datetime
 from fastapi import HTTPException
 from selenium.webdriver.common.by import By
 
+from common.model import MatchModel
+from common.mongodb.client import db
 from common.selenium import get_webdriver
 
 
 class ScheduleService:
 
-    def crawl_schedule(self, category="epl"):
+    def crawl_schedule(self, category="epl") -> list[MatchModel]:
 
         driver = get_webdriver()
 
         try:
-            matches = []
+            matches: list[MatchModel] = []
             today = datetime.now()
             current_month = today.month
             current_year = today.year
@@ -76,19 +78,17 @@ class ScheduleService:
                             month = match_date[4:6]
                             day = match_date[6:8]
 
-                            # 표준 날짜/시간 형식으로 변환
-                            match_info = {
-                                # ISO 형식 (YYYY-MM-DD)
-                                "date": f"{year}-{month}-{day}",
-                                "time": actual_time,  # 24시간 형식 (HH:MM)
-                                "status": match_status.text,
-                                "home_team": match_areas[0].text,
-                                "away_team": match_areas[1].text,
-                                "league": category.upper(),
-                                "cheer_url": f"{link}/cheer",
-                                # ISO 8601
-                                "timestamp": f"{year}-{month}-{day}T{actual_time}:00+09:00",
-                            }
+                            # 문자열 조합
+                            # datetime 객체 생성
+                            dt = datetime.strptime(f"{year}-{month}-{day}-{actual_time}", "%Y-%m-%d-%H:%M")
+                            match_info = MatchModel(
+                                date_time=dt,
+                                status=match_status.text,
+                                home_team=match_areas[0].text,
+                                away_team=match_areas[1].text,
+                                league=category.upper(),
+                                cheer_url=f"{link}/cheer"
+                            )
                             matches.append(match_info)
 
                         except Exception as e:
@@ -102,26 +102,18 @@ class ScheduleService:
         finally:
             driver.quit()
 
-    async def update_schedule(self, category: str):
+    async def update_schedule(self, category: str = 'epl') -> list[MatchModel]:
         try:
-            matches = self.crawl_schedule(category)
-
-            # JSON 파일로 저장
-            filename = f"data/{category.lower()}_schedule.json"
-            with open(filename, "w", encoding="utf-8") as f:
-                json.dump({"matches": matches}, f,
-                          ensure_ascii=False, indent=2)
-
-            return {"status": "success", "matches": matches}
+            matches: list[MatchModel] = self.crawl_schedule(category)
+            db['matches'].insert_many([dataclasses.asdict(match) for match in matches])
+            return matches
         except Exception as e:
             raise HTTPException(status_code=500, detail=str(e))
 
-    async def get_schedules(self, category: str):
+    async def get_schedules(self, category: str = 'epl') -> list[MatchModel]:
         try:
-            filename = f"data/{category.lower()}_schedule.json"
-            with open(filename, "r", encoding="utf-8") as f:
-                schedules = json.load(f)
-            return schedules
+            matches: list[dict] = db['matches'].find({}, {'_id': 0}).to_list()
+            return list(map(lambda x: MatchModel(**x), matches))
         except FileNotFoundError:
             # 파일이 없으면 새로 크롤링
             return await self.update_schedule(category)
