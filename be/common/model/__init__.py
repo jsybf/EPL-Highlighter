@@ -1,4 +1,4 @@
 from .chat_model import ChatModel
-from .schedule_model import ScheduleModel
+from .match_model import MatchModel
 
-__all__ = ['ChatModel', 'ScheduleModel']
+__all__ = ['ChatModel', 'MatchModel']

@@ -3,7 +3,7 @@ from datetime import datetime
 
 
 @dataclass
-class ScheduleModel:
+class MatchModel:
     date_time: datetime
     status: str
     home_team: str
