@@ -5,12 +5,11 @@ from typing import Callable
 from kafka import KafkaConsumer
 
 logger = logging.getLogger(__name__)
-console_handler = logging.StreamHandler()
-logger.addHandler(console_handler)
+logger.setLevel(logging.DEBUG)
 
 
 def get_kafka_consumer(broker_host: str, topic: str) -> KafkaConsumer:
-    return KafkaConsumer(
+    consumer = KafkaConsumer(
         topic,
         bootstrap_servers=broker_host,
         auto_offset_reset="earliest",
@@ -19,16 +18,17 @@ def get_kafka_consumer(broker_host: str, topic: str) -> KafkaConsumer:
         value_deserializer=lambda v: json.loads(v.decode("utf-8")),  # 메시지 디코딩
     )
 
+    logger.info(f"connected to kafka broker host:[{broker_host}] topic:[{topic}]")
 
-def main_loop(broker_host: str, topic: str, send_message_to_all: Callable[[str], None]):
-    # get kafka consumer
-    consumer: KafkaConsumer = get_kafka_consumer(broker_host, topic)
-    logging.info(f"connected to kafka broker host:[{broker_host}] topic:[{topic}]")
+    return consumer
 
+
+def main_loop(consumer: KafkaConsumer, send_message_to_all: Callable[[str], None]):
     # main loop
-    for message in consumer:
-        logging.debug(f'consumed message: ${message}')
+    for record in consumer:
+        message = record.value
+        logger.debug(f'consumed message: ${message}')
 
         # send socket
         message_str: str = json.dumps(message)
-        send_message_to_all(message)
+        send_message_to_all(message_str)

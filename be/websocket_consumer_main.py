@@ -7,8 +7,8 @@ from dotenv import load_dotenv
 from websocket_consumer import main_loop, ChatWebSocketServer, get_kafka_consumer
 
 logger = logging.getLogger(__name__)
-console_handler = logging.StreamHandler()
-logger.addHandler(console_handler)
+logger.setLevel(logging.DEBUG)
+
 
 
 def app(ws_port: int, kafka_host: str, kafka_topic: str):
@@ -21,7 +21,7 @@ def app(ws_port: int, kafka_host: str, kafka_topic: str):
     consumer = get_kafka_consumer(kafka_host, kafka_topic)
 
     # start main loop
-    main_loop(consumer, ws_server.ws_server.send_message_to_all)
+    main_loop(consumer,  ws_server.ws_server.send_message_to_all)
 
 
 if __name__ == '__main__':
@@ -32,7 +32,7 @@ if __name__ == '__main__':
     kafka_host: str = os.getenv('KAFKA_HOST')
     kafka_topic: str = os.getenv('KAFKA_TOPIC')
 
-    logging.info(f"""
+    logger.info(f"""
         -----env loaded-----
         ws_port={ws_port} 
         kafka_host={kafka_host}
