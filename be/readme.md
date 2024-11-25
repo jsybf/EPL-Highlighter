@@ -1,3 +1,5 @@
+## architecture
+[architecture-image](./images/architecute.svg)
 ## Kafka
 
 ### 구현한 것
@@ -34,4 +36,17 @@ docker compose down -v
 cd be
 docker compose up -d
 pipenv run python game_schedule_scheduler_main.py
+```
+
+## 실행확인
+### websocket-consumer
+requirement: [websocat](https://github.com/vi/websocat) 웹소켓 테스트용
+
+```
+docker compose up -d kafka
+pipenv run python mock_producer.py
+pipenv run python websocket_consumer_main.py
+
+websocat ws://127.0.0.1:9091/ # port는 .websocket_consumer.env에 따라 바뀔 수 있음
+
 ```
