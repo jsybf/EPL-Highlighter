@@ -16,6 +16,8 @@ kafka-python = "*"
 pytchat = "*"
 apscheduler = "*"
 pymongo = "*"
+websocket-server = "*"
+python-dotenv = "*"
 
 [requires]
 python_version = "3.9"
