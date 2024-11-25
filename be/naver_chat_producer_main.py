@@ -5,15 +5,13 @@ import time
 from datetime import datetime, timedelta
 from typing import Generator
 
-from common.kafka.dto.chat_message import ChatMessage
-from common.kafka.config import EPL_TOPIC_NAME, KAFKA_BROKER
 from kafka import KafkaProducer
-from selenium import webdriver
-from selenium.webdriver.chrome.options import Options
-from selenium.webdriver.chrome.service import Service as ChromeService
 from selenium.webdriver.chrome.webdriver import WebDriver
 from selenium.webdriver.common.by import By
-from webdriver_manager.chrome import ChromeDriverManager
+
+from common.kafka.config import EPL_TOPIC_NAME, KAFKA_BROKER
+from common.kafka.dto.chat_message import ChatMessage
+from common.selenium import get_webdriver
 
 
 def produce_chat(page_id: str, expire_datetime: datetime, broker_host: str, topic: str):
@@ -29,30 +27,15 @@ def produce_chat(page_id: str, expire_datetime: datetime, broker_host: str, topi
             dataclasses.asdict(chat_model)
         ).encode("utf-8"),
     )
-    for comment in crawl_comment(page_id, get_web_driver()):
+    for comment in crawl_comment(page_id, get_webdriver()):
         if expire_datetime < datetime.now():
             break
         producer.send(topic, value=comment)
         print(
             f"""Sent: [{
-                comment.time}]-[{comment.author}]-[{comment.message}] to topic: {topic}"""
+            comment.time}]-[{comment.author}]-[{comment.message}] to topic: {topic}"""
         )
     producer.close()
-
-
-def get_web_driver() -> WebDriver:
-    user_agent = "Mozilla/5.0 (Linux; Android 9; SM-G975F) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/71.0.3578.83 Mobile Safari/537.36"
-
-    options = Options()
-    options.add_argument("user-agent=" + user_agent)
-    options.add_argument("--window-size=1600,1000")
-    # options.add_argument("--headless")
-    options.add_argument("--disable-gpu")
-    options.add_argument("--no-sandbox")
-    options.add_argument("--disable-dev-shm-usage")
-    return webdriver.Chrome(
-        service=ChromeService(ChromeDriverManager().install()), options=options
-    )
 
 
 def crawl_comment(page_id: str, driver: WebDriver) -> Generator[ChatMessage, None, None]:

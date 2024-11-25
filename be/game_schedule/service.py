@@ -1,23 +1,19 @@
-import os
-from datetime import datetime
 import json
+import os
 import time
+from datetime import datetime
 
 from fastapi import HTTPException
-from selenium import webdriver
 from selenium.webdriver.common.by import By
-from selenium.webdriver.chrome.options import Options
+
+from common.selenium import get_webdriver
 
 
 class ScheduleService:
 
     def crawl_schedule(self, category="epl"):
-        options = Options()
-        options.add_argument("--headless")
-        options.add_argument("--disable-gpu")
-        options.add_argument("--no-sandbox")
-        options.add_argument("--disable-dev-shm-usage")
-        driver = webdriver.Chrome(options=options)
+
+        driver = get_webdriver()
 
         try:
             matches = []
@@ -35,7 +31,7 @@ class ScheduleService:
                 date = datetime(target_year, target_month,
                                 1).strftime("%Y-%m-%d")
                 url = f"""https://m.sports.naver.com/{
-                    sport_type}/schedule/index?category={category}&date={date}"""
+                sport_type}/schedule/index?category={category}&date={date}"""
                 driver.get(url)
                 time.sleep(2)
 
